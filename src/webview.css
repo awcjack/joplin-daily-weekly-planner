@@ -1,0 +1,243 @@
+:root {
+	--planner-bg: var(--joplin-background-color);
+	--planner-color: var(--joplin-color);
+	--planner-divider: var(--joplin-divider-color);
+	--planner-accent: var(--joplin-color-accent);
+}
+
+body {
+	background-color: var(--planner-bg);
+	color: var(--planner-color);
+	font-family: sans-serif;
+	margin: 0;
+	padding: 10px;
+}
+
+.planner-container {
+	display: flex;
+	flex-direction: column;
+	height: 100vh;
+}
+
+.planner-header {
+	display: flex;
+	justify-content: space-between;
+	align-items: center;
+	border-bottom: 1px solid var(--planner-divider);
+	padding-bottom: 10px;
+	margin-bottom: 10px;
+}
+
+.controls {
+	display: flex;
+	gap: 5px;
+}
+
+.planner-header h2 {
+	margin: 0;
+}
+
+.planner-content {
+	display: flex;
+	flex: 1;
+	gap: 15px;
+	overflow: hidden;
+}
+
+.projects-section {
+	width: 250px;
+	display: flex;
+	flex-direction: column;
+	border-right: 1px solid var(--planner-divider);
+	padding-right: 10px;
+}
+
+.projects-section h3 {
+	margin-top: 0;
+	font-size: 1.1em;
+}
+
+#projects-list {
+	list-style: none;
+	padding: 0;
+	margin: 0;
+	overflow-y: auto;
+}
+
+.project-item {
+	padding: 5px;
+	cursor: grab;
+	border-bottom: 1px solid var(--planner-divider);
+	font-size: 0.9em;
+	display: flex;
+	justify-content: space-between;
+	align-items: center;
+}
+
+.project-item:hover {
+	background-color: rgba(128, 128, 128, 0.1);
+}
+
+.project-title {
+	flex: 1;
+	white-space: nowrap;
+	overflow: hidden;
+	text-overflow: ellipsis;
+}
+
+.add-btn {
+	cursor: pointer;
+	padding: 0 5px;
+	font-weight: bold;
+	color: var(--planner-accent);
+	font-size: 1.2em;
+	opacity: 0.6;
+}
+
+.add-btn:hover {
+	opacity: 1;
+	background-color: rgba(128, 128, 128, 0.2);
+	border-radius: 3px;
+}
+
+.timeblocks-section {
+	flex: 1;
+	display: flex;
+	flex-direction: column;
+	overflow-y: auto;
+}
+
+.tabs {
+	display: flex;
+	gap: 10px;
+	margin-bottom: 10px;
+}
+
+.tab-btn {
+	background: none;
+	border: 1px solid var(--planner-divider);
+	color: var(--planner-color);
+	padding: 5px 15px;
+	cursor: pointer;
+}
+
+.tab-btn.active {
+	background-color: var(--planner-accent);
+	color: white;
+	border-color: var(--planner-accent);
+}
+
+.date-controls {
+	display: flex;
+	justify-content: center;
+	align-items: center;
+	gap: 15px;
+	margin-bottom: 10px;
+	font-weight: bold;
+}
+
+#prev-date-btn, #next-date-btn {
+	background: none;
+	border: none;
+	font-size: 1.2em;
+	cursor: pointer;
+	color: var(--planner-color);
+}
+
+.time-grid {
+	display: flex;
+	flex-direction: column;
+}
+
+.time-slot {
+	display: flex;
+	border-bottom: 1px solid var(--planner-divider);
+	min-height: 40px;
+}
+
+.time-label {
+	width: 60px;
+	padding: 5px;
+	font-size: 0.8em;
+	color: gray;
+	border-right: 1px solid var(--planner-divider);
+}
+
+.time-content {
+	flex: 1;
+	padding: 5px;
+	outline: none;
+	border: 2px solid transparent; /* Prepare for drag highlight */
+	border-left: none; /* Avoid double border if any */
+}
+
+.time-content.drag-over {
+	border-color: var(--planner-accent);
+	background-color: rgba(128, 128, 128, 0.1);
+}
+
+.time-content:empty:before {
+	content: attr(data-placeholder);
+	color: gray;
+	font-style: italic;
+}
+
+.weekly-grid {
+	display: flex;
+	flex-direction: column;
+}
+
+.week-header {
+	display: grid;
+	grid-template-columns: 60px repeat(7, 1fr);
+	border-bottom: 2px solid var(--planner-divider);
+	font-weight: bold;
+	text-align: center;
+	font-size: 0.9em;
+}
+
+.week-row {
+	display: grid;
+	grid-template-columns: 60px repeat(7, 1fr);
+	border-bottom: 1px solid var(--planner-divider);
+	min-height: 60px;
+}
+
+.week-slot {
+	border-right: 1px solid var(--planner-divider);
+	padding: 2px;
+	font-size: 0.8em;
+	outline: none;
+	border-top: 2px solid transparent;
+	border-left: 2px solid transparent;
+	border-bottom: 2px solid transparent;
+}
+
+.week-slot.drag-over {
+	border-color: var(--planner-accent);
+	background-color: rgba(128, 128, 128, 0.1);
+}
+
+button {
+	background-color: var(--joplin-button-background-color);
+	color: var(--joplin-button-color);
+	border: 1px solid var(--planner-divider);
+	padding: 5px 10px;
+	cursor: pointer;
+}
+
+button:hover {
+	opacity: 0.8;
+}
+
+#close-btn {
+	background-color: transparent;
+	border: none;
+	color: var(--planner-color);
+	font-size: 1.1em;
+	padding: 5px;
+}
+
+#close-btn:hover {
+	color: #ff4d4d;
+}
