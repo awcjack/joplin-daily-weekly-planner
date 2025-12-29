@@ -16,23 +16,153 @@ joplin.plugins.register({
 				public: false,
 				label: 'Planner Note ID',
 			},
+			'plannerAlarmNoteId': {
+				value: '',
+				type: 2,
+				section: 'plannerSection',
+				public: false,
+				label: 'Planner Alarm Note ID',
+			},
+			'plannerFolderId': {
+				value: '',
+				type: 2,
+				section: 'plannerSection',
+				public: false,
+				label: 'Planner Folder ID',
+			},
 		});
 
-		// Find or create the data note
-		let dataNoteId = await joplin.settings.value('plannerNoteId');
-		if (!dataNoteId) {
-			console.info('No data note ID found in settings. Searching by title...');
-			const search = await joplin.data.get(['search'], { query: 'title:"Joplin Planner Data"' });
-			if (search.items.length > 0) {
-				dataNoteId = search.items[0].id;
-				console.info('Found existing data note:', dataNoteId);
-			} else {
-				console.info('Creating new data note...');
-				const newNote = await joplin.data.post(['notes'], null, { title: 'Joplin Planner Data', body: '' });
-				dataNoteId = newNote.id;
+		async function ensureFolderExists(settingKey: string, title: string) {
+			let folderId = await joplin.settings.value(settingKey);
+			if (folderId) {
+				try {
+					await joplin.data.get(['folders', folderId], { fields: ['id'] });
+					return folderId;
+				} catch (e) {
+					console.warn(`Folder ${folderId} not found, recreating...`);
+				}
 			}
-			await joplin.settings.setValue('plannerNoteId', dataNoteId);
+
+			const search = await joplin.data.get(['search'], { query: `notebook:"${title}" type:folder` });
+			if (search.items.length > 0) {
+				folderId = search.items[0].id;
+			} else {
+				const newFolder = await joplin.data.post(['folders'], null, { title: title });
+				folderId = newFolder.id;
+			}
+			await joplin.settings.setValue(settingKey, folderId);
+			return folderId;
 		}
+
+		async function ensureNoteExists(settingKey: string, title: string, parentId: string, isTodo = 0, initialBody = '') {
+			let noteId = await joplin.settings.value(settingKey);
+			if (noteId) {
+				try {
+					await joplin.data.get(['notes', noteId], { fields: ['id'] });
+					return noteId;
+				} catch (e) {
+					console.warn(`Note ${noteId} not found, recreating...`);
+				}
+			}
+
+			const search = await joplin.data.get(['search'], { query: `title:"${title}"` });
+			if (search.items.length > 0) {
+				noteId = search.items[0].id;
+			} else {
+				const newNote = await joplin.data.post(['notes'], null, { 
+					title: title, 
+					body: initialBody,
+					parent_id: parentId,
+					is_todo: isTodo
+				});
+				noteId = newNote.id;
+			}
+			await joplin.settings.setValue(settingKey, noteId);
+			return noteId;
+		}
+
+		// Ensure resources exist
+		const folderId = await ensureFolderExists('plannerFolderId', 'Planner');
+		const dataNoteId = await ensureNoteExists('plannerNoteId', 'Joplin Planner Data', folderId, 0, '');
+		const alarmNoteId = await ensureNoteExists('plannerAlarmNoteId', 'Planner Reminders', folderId, 1, 'This note is used by the Planner plugin to trigger alarms.');
+
+		let cachedPlannerData: any = {};
+		let lastNotifiedKey = '';
+
+		async function loadPlannerData() {
+			const note = await joplin.data.get(['notes', dataNoteId], { fields: ['body'] });
+			const body = note.body || '';
+			const match = body.match(/```json\n([\s\S]*?)\n```/);
+			if (match && match[1]) {
+				try {
+					const data = JSON.parse(match[1]);
+					// Filter to last 1 month
+					const filteredData: any = {};
+					const now = new Date();
+					const thirtyDaysAgo = new Date(now.setDate(now.getDate() - 30));
+					
+					for (const dateKey in data) {
+						const date = new Date(dateKey);
+						if (date >= thirtyDaysAgo) {
+							filteredData[dateKey] = data[dateKey];
+						}
+					}
+					cachedPlannerData = filteredData;
+					return filteredData;
+				} catch (e) {
+					console.error('Error parsing planner data:', e);
+					return {};
+				}
+			}
+			return {};
+		}
+
+		// Initial load
+		await loadPlannerData();
+
+		const showNotification = async (title: string, message: string) => {
+			// Trigger Joplin Alarm
+			try {
+				await joplin.data.put(['notes', alarmNoteId], null, {
+					title: `Planner: ${message.split('\n')[0]}`,
+					body: message, // Update content with task details
+					todo_due: Date.now() + 5000, // Trigger alarm in 5 seconds
+					todo_completed: 0,
+				});
+			} catch (e) {
+				console.error('Failed to set Joplin alarm:', e);
+			}
+
+			// Show Toast
+			await joplin.views.dialogs.showToast({ message: `${title}: ${message}` });
+		};
+
+		// Check for reminders every minute
+		setInterval(async () => {
+			const now = new Date();
+			const dateKey = now.toISOString().split('T')[0];
+			const hour = now.getHours();
+			const timeKey = `${hour.toString().padStart(2, '0')}:00`;
+			
+			const checkKey = `${dateKey}_${timeKey}`;
+
+			if (cachedPlannerData[dateKey] && cachedPlannerData[dateKey][timeKey]) {
+				const task = cachedPlannerData[dateKey][timeKey];
+				// Notify if not already notified for this slot
+				if (lastNotifiedKey !== checkKey) {
+					// Check if task is not empty
+					if (task && task.trim().length > 0) {
+						await showNotification('Planner Reminder', task.split('\n')[0]);
+						lastNotifiedKey = checkKey;
+					}
+				}
+			} else {
+				// Reset if we moved to a new slot that is empty
+				if (lastNotifiedKey !== checkKey) {
+					// Optional reset logic
+				}
+			}
+		}, 60 * 1000);
 
 		const panel = await joplin.views.panels.create('planner_panel');
 
@@ -105,31 +235,11 @@ joplin.plugins.register({
 				// Save to note body
 				const newBody = '```json\n' + JSON.stringify(message.data, null, 2) + '\n```';
 				await joplin.data.put(['notes', dataNoteId], null, { body: newBody });
+				// Update cache
+				cachedPlannerData = message.data;
 			} else if (message.type === 'loadData') {
-				const note = await joplin.data.get(['notes', dataNoteId], { fields: ['body'] });
-				const body = note.body || '';
-				const match = body.match(/```json\n([\s\S]*?)\n```/);
-				if (match && match[1]) {
-					try {
-						const data = JSON.parse(match[1]);
-						// Filter to last 1 month (30 days) to prevent memory issues
-						const filteredData = {};
-						const now = new Date();
-						const thirtyDaysAgo = new Date(now.setDate(now.getDate() - 30));
-						
-						for (const dateKey in data) {
-							const date = new Date(dateKey);
-							if (date >= thirtyDaysAgo) {
-								filteredData[dateKey] = data[dateKey];
-							}
-						}
-						return filteredData;
-					} catch (e) {
-						console.error('Error parsing planner data:', e);
-						return {};
-					}
-				}
-				return {};
+				// Return cached data or load fresh
+				return await loadPlannerData();
 			}
 		});
 	},
