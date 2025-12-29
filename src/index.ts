@@ -191,10 +191,11 @@ joplin.plugins.register({
 						</div>
 					</div>
 					<div class="planner-content">
-						<div class="projects-section">
+						<div class="projects-section" id="sidebar">
 							<h3>Projects</h3>
 							<ul id="projects-list">Loading...</ul>
 						</div>
+						<div class="resizer" id="dragMe"></div>
 						<div class="timeblocks-section">
 							<div class="tabs">
 								<button class="tab-btn active" data-tab="daily">Daily</button>

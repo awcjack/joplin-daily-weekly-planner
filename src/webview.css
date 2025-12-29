@@ -46,10 +46,23 @@ body {
 
 .projects-section {
 	width: 250px;
+	min-width: 150px;
 	display: flex;
 	flex-direction: column;
-	border-right: 1px solid var(--planner-divider);
-	padding-right: 10px;
+	border-right: none; /* Border handled by resizer */
+	padding-right: 5px;
+}
+
+.resizer {
+	width: 5px;
+	background-color: var(--planner-divider);
+	cursor: col-resize;
+	user-select: none;
+	transition: background-color 0.2s;
+}
+
+.resizer:hover, .resizer.resizing {
+	background-color: var(--planner-accent);
 }
 
 .projects-section h3 {
@@ -156,11 +169,12 @@ body {
 }
 
 .time-label {
-	width: 60px;
+	width: 60px; /* Optional if grid sets it, but good for flex daily view */
 	padding: 5px;
 	font-size: 0.8em;
 	color: gray;
 	border-right: 1px solid var(--planner-divider);
+	box-sizing: border-box;
 }
 
 .time-content {
@@ -169,6 +183,8 @@ body {
 	outline: none;
 	border: 2px solid transparent; /* Prepare for drag highlight */
 	border-left: none; /* Avoid double border if any */
+	box-sizing: border-box;
+	overflow: hidden;
 }
 
 .time-content.drag-over {
@@ -196,6 +212,11 @@ body {
 	font-size: 0.9em;
 }
 
+.week-header > div {
+	padding: 5px;
+	box-sizing: border-box;
+}
+
 .week-row {
 	display: grid;
 	grid-template-columns: 60px repeat(7, 1fr);
@@ -211,6 +232,9 @@ body {
 	border-top: 2px solid transparent;
 	border-left: 2px solid transparent;
 	border-bottom: 2px solid transparent;
+	box-sizing: border-box;
+	overflow: hidden;
+	word-break: break-word;
 }
 
 .week-slot.drag-over {

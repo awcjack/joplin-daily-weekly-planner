@@ -281,6 +281,41 @@ async function init() {
 	// Initial load
 	loadProjects();
 	loadData();
+
+	// Resizer Logic
+	const resizer = document.getElementById('dragMe');
+	const sidebar = document.getElementById('sidebar');
+	const container = document.querySelector('.planner-content');
+	
+	let x = 0;
+	let w = 0;
+
+	const mouseDownHandler = function(e) {
+		x = e.clientX;
+		const sbWidth = window.getComputedStyle(sidebar).width;
+		w = parseInt(sbWidth, 10);
+
+		document.addEventListener('mousemove', mouseMoveHandler);
+		document.addEventListener('mouseup', mouseUpHandler);
+		resizer.classList.add('resizing');
+	};
+
+	const mouseMoveHandler = function(e) {
+		const dx = e.clientX - x;
+		const newWidth = w + dx;
+		// Min width check
+		if (newWidth > 150 && newWidth < container.getBoundingClientRect().width - 300) {
+			sidebar.style.width = `${newWidth}px`;
+		}
+	};
+
+	const mouseUpHandler = function() {
+		document.removeEventListener('mousemove', mouseMoveHandler);
+		document.removeEventListener('mouseup', mouseUpHandler);
+		resizer.classList.remove('resizing');
+	};
+
+	resizer.addEventListener('mousedown', mouseDownHandler);
 }
 
 init();
