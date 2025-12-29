@@ -233,9 +233,41 @@ joplin.plugins.register({
 			} else if (message.type === 'openNote') {
 				await joplin.commands.execute('openNote', message.noteId);
 			} else if (message.type === 'saveData') {
-				// Save to note body
-				const newBody = '```json\n' + JSON.stringify(message.data, null, 2) + '\n```';
-				await joplin.data.put(['notes', dataNoteId], null, { body: newBody });
+				// Generate Markdown for mobile readability
+				let mdContent = '# Planner Schedule\n\n';
+				const sortedDates = Object.keys(message.data).sort();
+				
+				// Filter to show only Today and Tomorrow for mobile readability
+				const now = new Date();
+				const todayStr = now.toISOString().split('T')[0];
+				
+				const tomorrow = new Date(now);
+				tomorrow.setDate(tomorrow.getDate() + 1);
+				const tomorrowStr = tomorrow.toISOString().split('T')[0];
+
+				for (const dateKey of sortedDates) {
+					if (dateKey === todayStr || dateKey === tomorrowStr) {
+						mdContent += `## ${dateKey} ${dateKey === todayStr ? '(Today)' : '(Tomorrow)'}\n`;
+						const dayData = message.data[dateKey];
+						const times = Object.keys(dayData).sort();
+						if (times.length === 0) {
+							mdContent += '_No tasks_\n';
+						} else {
+							for (const time of times) {
+								// Format multi-line tasks
+								const task = dayData[time].replace(/\n/g, '; ');
+								mdContent += `- **${time}**: ${task}\n`;
+							}
+						}
+						mdContent += '\n';
+					}
+				}
+
+				mdContent += '---\n*Data below is used by the Planner plugin. Do not edit manually.*\n\n';
+				const jsonBlock = '```json\n' + JSON.stringify(message.data, null, 2) + '\n```';
+				
+				await joplin.data.put(['notes', dataNoteId], null, { body: mdContent + jsonBlock });
+				
 				// Update cache
 				cachedPlannerData = message.data;
 			} else if (message.type === 'loadData') {
